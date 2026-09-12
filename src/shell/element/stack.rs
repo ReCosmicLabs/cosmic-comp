@@ -538,16 +538,22 @@ impl CosmicStack {
     ) -> Option<(PointerFocusTarget, Point<f64, Logical>)> {
         self.0.with_program(|p| {
             let mut stack_ui = None;
-            let geo = p.windows.lock().unwrap()[p.active.load(Ordering::SeqCst)].geometry();
+            let (geo, is_maximized) = {
+                let windows = p.windows.lock().unwrap();
+                let active = &windows[p.active.load(Ordering::SeqCst)];
+                (active.geometry(), active.is_maximized(false))
+            };
 
             if surface_type.contains(WindowSurfaceType::TOPLEVEL) {
                 let point_i32 = relative_pos.to_i32_floor::<i32>();
-                if (point_i32.x - geo.loc.x >= -RESIZE_BORDER && point_i32.x - geo.loc.x < 0)
-                    || (point_i32.y - geo.loc.y >= -RESIZE_BORDER && point_i32.y - geo.loc.y < 0)
-                    || (point_i32.x - geo.loc.x >= geo.size.w
-                        && point_i32.x - geo.loc.x < geo.size.w + RESIZE_BORDER)
-                    || (point_i32.y - geo.loc.y >= geo.size.h + TAB_HEIGHT
-                        && point_i32.y - geo.loc.y < geo.size.h + TAB_HEIGHT + RESIZE_BORDER)
+                if !is_maximized
+                    && ((point_i32.x - geo.loc.x >= -RESIZE_BORDER && point_i32.x - geo.loc.x < 0)
+                        || (point_i32.y - geo.loc.y >= -RESIZE_BORDER
+                            && point_i32.y - geo.loc.y < 0)
+                        || (point_i32.x - geo.loc.x >= geo.size.w
+                            && point_i32.x - geo.loc.x < geo.size.w + RESIZE_BORDER)
+                        || (point_i32.y - geo.loc.y >= geo.size.h + TAB_HEIGHT
+                            && point_i32.y - geo.loc.y < geo.size.h + TAB_HEIGHT + RESIZE_BORDER))
                 {
                     stack_ui = Some((
                         PointerFocusTarget::StackUI(self.clone()),

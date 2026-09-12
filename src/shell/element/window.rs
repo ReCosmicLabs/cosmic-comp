@@ -123,6 +123,9 @@ impl Focus {
     ) -> Option<Focus> {
         let geo = surface.geometry();
         let loc = location.to_i32_floor::<i32>() - geo.loc;
+        if surface.is_maximized(false) {
+            return (header_height > 0 && loc.y < header_height).then_some(Focus::Header);
+        }
         if loc.y < 0 && loc.x < 0 {
             Some(Focus::ResizeTopLeft)
         } else if loc.y < 0 && loc.x >= geo.size.w {
@@ -304,12 +307,14 @@ impl CosmicWindow {
                 let point_i32 = relative_pos.to_i32_floor::<i32>();
                 let ssd_height = if has_ssd { SSD_HEIGHT } else { 0 };
 
-                if (point_i32.x - geo.loc.x >= -RESIZE_BORDER && point_i32.x - geo.loc.x < 0)
-                    || (point_i32.y - geo.loc.y >= -RESIZE_BORDER && point_i32.y - geo.loc.y < 0)
-                    || (point_i32.x - geo.loc.x >= geo.size.w
-                        && point_i32.x - geo.loc.x < geo.size.w + RESIZE_BORDER)
-                    || (point_i32.y - geo.loc.y >= geo.size.h + ssd_height
-                        && point_i32.y - geo.loc.y < geo.size.h + ssd_height + RESIZE_BORDER)
+                if !p.window.is_maximized(false)
+                    && ((point_i32.x - geo.loc.x >= -RESIZE_BORDER && point_i32.x - geo.loc.x < 0)
+                        || (point_i32.y - geo.loc.y >= -RESIZE_BORDER
+                            && point_i32.y - geo.loc.y < 0)
+                        || (point_i32.x - geo.loc.x >= geo.size.w
+                            && point_i32.x - geo.loc.x < geo.size.w + RESIZE_BORDER)
+                        || (point_i32.y - geo.loc.y >= geo.size.h + ssd_height
+                            && point_i32.y - geo.loc.y < geo.size.h + ssd_height + RESIZE_BORDER))
                 {
                     window_ui = Some((
                         PointerFocusTarget::WindowUI(self.clone()),
